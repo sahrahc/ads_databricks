@@ -74,6 +74,7 @@ kafka_df = (
         .option("startingOffsets", "latest")
         .load()
 )
+```
 
 Kafka records include:
 | Field     | Description       |
@@ -98,15 +99,17 @@ Bronze principles:
 
 Example Bronze ingestion:
 
+```
 bronze_df = kafka_df.selectExpr(
     "CAST(value AS STRING) as raw_json",
     "timestamp as kafka_timestamp",
     "partition",
     "offset"
 )
-
+```
 Write to delta:
 
+```
 bronze_query = (
     bronze_df.writeStream
         .format("delta")
@@ -114,7 +117,7 @@ bronze_query = (
         .option("checkpointLocation", "/mnt/checkpoints/ads_bronze")
         .start("/mnt/delta/ads_bronze")
 )
-
+```
 Bronze table schema:
 
 | Column          | Description            |
@@ -137,27 +140,28 @@ Responsibilities:
 
 Example transformation:
 
+```
 silver_df = bronze_stream.select(
     from_json(col("raw_json"), event_schema).alias("data")
 ).select("data.*")
-
+```
 Deduplicate events:
-
+```
 silver_df = (
     silver_df
     .withWatermark("event_time", "10 minutes")
     .dropDuplicates(["event_id"])
 )
-
+```
 Write Silver table:
-
+```
 silver_query = (
     silver_df.writeStream
         .format("delta")
         .option("checkpointLocation", "/mnt/checkpoints/ads_silver")
         .start("/mnt/delta/ads_silver")
 )
-
+```
 Silver table contains structured events.
 
 # Gold Layer
@@ -176,7 +180,7 @@ Metrics:
 - revenue
 
 Example aggregation:
-
+```
 campaign_metrics = (
     silver_df
     .groupBy("campaign_id", "date")
@@ -187,7 +191,7 @@ campaign_metrics = (
         sum("conversion_value").alias("revenue")
     )
 )
-
+```
 # Gold Tables
 | Table                 | Description                |
 | --------------------- | -------------------------- |
@@ -205,10 +209,10 @@ These tables power business dashboards and analytics queries.
 Each streaming query uses a checkpoint directory.
 
 Example:
-/mnt/checkpoints/ads_bronze
+```/mnt/checkpoints/ads_bronze
 /mnt/checkpoints/ads_silver
 /mnt/checkpoints/gold_campaign
-
+```
 Checkpoint data stores:
 - processed Kafka offsets
 - streaming state
@@ -224,22 +228,22 @@ Checkpoints enable fault tolerance and exactly-once processing.
 4. Start Gold aggregation jobs.
 
 Verify data flow using:
-  spark.streams.active
+```spark.streams.active
 
 # Example Analytics Queries
 
 Campaign performance:
 
-SELECT campaign_id, impressions, clicks
+```SELECT campaign_id, impressions, clicks
 FROM gold_campaign_metrics
 ORDER BY impressions DESC
-
+```
 Return on ad spend:
 
-SELECT campaign_id, revenue / spend AS roas
+```SELECT campaign_id, revenue / spend AS roas
 FROM gold_campaign_metrics
 ORDER BY roas DESC
-
+```
 # Future Enhancements
 
 Potential improvements:
