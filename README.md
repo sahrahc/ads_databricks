@@ -101,6 +101,7 @@ Metrics:
 | fct_attribution       | Attributed conversion if happened within 7 days |
 | fct_session_ad_load   | Ads served per session                          |
 | fct_user_engagement   | User engagement metrics                         |
+| fct_budget_hourly     | Budget pacing                                   |
 
 
 These tables power business dashboards and analytics queries.
